@@ -17,11 +17,13 @@ texturesPool = dict()
 
 #TAREA4: Esta función carga las texturas. Como el pool es un diccionario, cada textura se almacena con una clave única. 
 # Por ejemplo: clave 'roof' para la textura del techo
-def loadTextures():
+def loadTextures(i):
     texturesPool['roof'] = es.textureSimpleSetup(getAssetPath("roof2.jpg"), GL_REPEAT, GL_REPEAT, GL_LINEAR,GL_LINEAR)
     texturesPool['wallHouse'] = es.textureSimpleSetup(getAssetPath("wall5.jpg"), GL_REPEAT, GL_REPEAT, GL_LINEAR,GL_LINEAR)
+    texturesPool['skyblock'] = es.textureSimpleSetup(getAssetPath("skyblock"+str(i)+".jpg"), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_NEAREST)
     glGenerateMipmap(GL_TEXTURE_2D)
     texturesPool['wallWall'] = texturesPool['wallHouse']
+    
 
 
 def createOFFShape(pipeline, filename, r,g, b):
@@ -339,6 +341,37 @@ def createCarScene(pipeline):
 
     return scene
 
+# Extra: Implementa la función "createSkyBlock" que crea un objeto que representa un paisaje de fondo (no se pone cara superior para que no sea más costoso, aparte no se apreciaría)
+# y devuelve un nodo de un grafo de escena (un objeto sg.SceneGraphNode) que representa toda la geometría y las texturas
+# Esta función recibe como parámetro el pipeline que se usa para las texturas (texPipeline) y un entero, que determina que textura se utilizará
+def createSkyBlock(pipeline):
+    skyBlockShape = createGPUShape(pipeline, bs.createTextureQuadWithNormal(1.0, 1.0))
+    skyBlockShape.texture = texturesPool['skyblock']
+
+    #aquí se preparan 2 planos, formando un angulo de 90 grados para tener un muro en forma de L
+    rotatedWall= sg.SceneGraphNode('rotatedSky')
+    rotatedWall.transform=tr.matmul([tr.translate(0.5,0,0.5),tr.rotationY(np.pi/2)])
+    rotatedWall.childs+=[skyBlockShape]
+
+    normalWall= sg.SceneGraphNode('normalSky')
+    normalWall.childs+=[skyBlockShape]
+
+    lShapeWalls=sg.SceneGraphNode('lShapeSky')
+    lShapeWalls.childs+=[normalWall]
+    lShapeWalls.childs+=[rotatedWall]
+
+    #aquí se rota la estructura en forma de L para tener la base del paisaje
+    rotatedLShape=sg.SceneGraphNode('rotatedLShapeSky')
+    rotatedLShape.transform=tr.matmul([tr.translate(0,0,1),tr.rotationY(np.pi)])
+    rotatedLShape.childs+=[lShapeWalls]
+
+    #se traslada para que quede instanciada en el origen
+    Background=sg.SceneGraphNode('SkyAssemble')
+    Background.transform=tr.matmul([tr.uniformScale(120), tr.translate(0,0.35,-0.5)])
+    Background.childs+=[lShapeWalls, rotatedLShape]
+
+    return Background
+
 # TAREA3: Esta función crea toda la escena estática y texturada de esta aplicación.
 # Por ahora ya están implementadas: la pista y el terreno
 # En esta función debes incorporar las casas y muros alrededor de la pista
@@ -479,6 +512,10 @@ def createStaticScene(pipeline):
     walls.childs += [wall3]
     walls.childs += [wall4]
 
+        #--------------Generar Paisaje ----------------------------------------------------------#
+    skyBlock=sg.SceneGraphNode('skyBlock')
+    skyBlock.childs+=[createSkyBlock(pipeline)]
+
     scene = sg.SceneGraphNode('system-static')
     scene.childs += [linearSectorLeft]
     scene.childs += [linearSectorRight]
@@ -487,5 +524,6 @@ def createStaticScene(pipeline):
     scene.childs += [sandNode]
     scene.childs += [houses] #se agregan las casas a la escena
     scene.childs += [walls] #se agregan las murallas a la escena
+    scene.childs += [skyBlock]
     
     return scene

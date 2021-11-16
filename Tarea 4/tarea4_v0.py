@@ -339,7 +339,9 @@ if __name__ == "__main__":
 
     #NOTA: Aqui creas un objeto con tu escena
     #TAREA4: Se cargan las texturas y se configuran las luces
-    loadTextures()
+    ##para el skyblock
+    sky=np.random.randint(3)
+    loadTextures(sky+1)
     setLights()
 
     dibujo = createStaticScene(texPipeline)
